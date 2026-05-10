@@ -6,9 +6,9 @@
 <title>Null Links Navigator (4152 links)</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; display: flex; flex-direction: column; }
+  body { font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
   
-  header { background: #1e293b; border-bottom: 1px solid #334155; padding: 12px 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  header { background: #1e293b; border-bottom: 1px solid #334155; padding: 12px 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; flex-shrink: 0; }
   header h1 { font-size: 15px; font-weight: 600; color: #94a3b8; white-space: nowrap; }
   
   .progress-wrap { flex: 1; min-width: 120px; }
@@ -27,7 +27,7 @@
   .btn-reset { background: #7f1d1d; color: #fca5a5; font-size: 12px; padding: 6px 10px; }
   .btn-reset:hover { background: #991b1b; }
   
-  .main { flex: 1; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .main { flex: 1; min-height: 0; padding: 16px; display: flex; flex-direction: column; gap: 12px; overflow: hidden; }
   
   .current-card { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 16px; }
   .current-label { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
