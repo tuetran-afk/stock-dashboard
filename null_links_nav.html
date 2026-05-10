@@ -64,6 +64,8 @@
     <div class="progress-text" id="progressText"></div>
   </div>
   <div class="controls">
+   <button class="btn btn-open" style="background: #f59e0b;" onclick="toggleAutoPlay()" id="btnAutoPlay">▶ Bật Auto 30s</button>
+
     <button class="btn btn-prev" onclick="move(-1)" title="Prev (←)">◀ Prev</button>
     <button class="btn btn-open" onclick="openCurrent()" title="Open (Space/Enter)">🔗 Mở</button>
     <button class="btn btn-next" onclick="move(1)" title="Next (→)">Next ▶</button>
@@ -217,6 +219,57 @@ loadState();
 updateProgress();
 updateCard();
 renderList();
+ let autoTimer = null;
+let currentWindow = null;
+
+function toggleAutoPlay() {
+  const btn = document.getElementById('btnAutoPlay');
+  
+  if (autoTimer) {
+    // Nếu đang chạy thì Tắt
+    clearTimeout(autoTimer);
+    autoTimer = null;
+    btn.innerText = "▶ Bật Auto 30s";
+    btn.style.background = "#f59e0b";
+  } else {
+    // Nếu đang tắt thì Bật
+    btn.innerText = "⏹ Đang Auto (Bấm để Dừng)";
+    btn.style.background = "#ef4444"; // Đổi màu đỏ
+    runAutoPlay();
+  }
+}
+
+function runAutoPlay() {
+  const item = DATA[current];
+  if (!item) return;
+
+  // Nếu có tab cũ đang mở thì tự động đóng lại
+  if (currentWindow && !currentWindow.closed) {
+    currentWindow.close();
+  }
+
+  // Mở tab mới và lưu lại để tí nữa tự đóng
+  currentWindow = window.open(item.url, '_blank');
+  
+  // Đánh dấu đã xong và chuyển sang gói kế tiếp
+  done.add(current);
+  updateProgress();
+  updateCard();
+  const el = document.querySelector(`.list-item[data-idx="${current}"]`);
+  if (el) {
+    el.classList.add('done');
+    const check = el.querySelector('.item-check');
+    if (check) check.classList.add('checked');
+  }
+  saveState();
+  move(1);
+
+  // Đặt lịch đếm ngược 30 giây để lặp lại chu trình
+  autoTimer = setTimeout(() => {
+    runAutoPlay();
+  }, 5000); // 30000ms = 30 giây
+}
+
 </script>
 </body>
 </html>
