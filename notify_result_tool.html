@@ -1,0 +1,244 @@
+
+<h2 class="sr-only">Tool tự động refresh notifyNo theo batch 500 dòng/ngày</h2>
+<style>
+.wrap{padding:1rem 0;font-size:13px}
+.section-header{font-size:11px;font-weight:500;color:#534AB7;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.8px;margin:0 0 8px;display:flex;align-items:center;gap:6px}
+.card{background:#EEEDFE;border:0.5px solid #AFA9EC;border-radius:var(--border-radius-lg);padding:1rem 1.25rem;margin-bottom:12px}
+.card.teal{background:#E1F5EE;border-color:#5DCAA5}
+.card.amber{background:#FAEEDA;border-color:#EF9F27}
+.card.log-card{background:#F1EFE8;border-color:#B4B2A9}
+.row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:10px}
+.row:last-child{margin-bottom:0}
+.fg{display:flex;flex-direction:column;gap:4px}
+.fg label{font-size:11px;color:#534AB7;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.6px;font-weight:500}
+.fg.teal label{color:#0F6E56}
+.stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px;margin-bottom:12px}
+.stat{border-radius:var(--border-radius-md);padding:10px 12px}
+.stat.s-total{background:#EEEDFE;border:0.5px solid #AFA9EC}
+.stat.s-today{background:#FAEEDA;border:0.5px solid #EF9F27}
+.stat.s-remain{background:#E1F5EE;border:0.5px solid #5DCAA5}
+.stat.s-ok{background:#EAF3DE;border:0.5px solid #97C459}
+.stat.s-err{background:#FCEBEB;border:0.5px solid #F09595}
+.stat .label{font-size:11px;margin-bottom:3px;font-weight:500}
+.stat.s-total .label{color:#534AB7}
+.stat.s-today .label{color:#854F0B}
+.stat.s-remain .label{color:#0F6E56}
+.stat.s-ok .label{color:#3B6D11}
+.stat.s-err .label{color:#A32D2D}
+.stat .val{font-size:22px;font-weight:500;font-family:var(--font-mono)}
+.stat.s-total .val{color:#3C3489}
+.stat.s-today .val{color:#633806}
+.stat.s-remain .val{color:#085041}
+.stat.s-ok .val{color:#27500A}
+.stat.s-err .val{color:#791F1F}
+.progress-wrap{background:#C0DD97;border-radius:99px;height:8px;overflow:hidden;margin:8px 0}
+.progress-bar{height:100%;background:#3B6D11;border-radius:99px;transition:width 0.3s}
+.log-box{background:#ffffff;border:0.5px solid #B4B2A9;border-radius:var(--border-radius-md);padding:10px 12px;font-family:var(--font-mono);font-size:11px;max-height:150px;overflow-y:auto;color:#5F5E5A}
+.log-line{padding:1px 0}
+.log-line.ok{color:#27500A}
+.log-line.err{color:#A32D2D}
+.log-line.warn{color:#633806}
+.url-preview{font-family:var(--font-mono);font-size:10px;color:#534AB7;background:#ffffff;border:0.5px solid #AFA9EC;padding:5px 8px;border-radius:var(--border-radius-md);margin-top:6px;word-break:break-all}
+.btn-purple{background:#534AB7;color:#fff;border:none;font-size:12px;padding:6px 14px;border-radius:var(--border-radius-md);cursor:pointer;display:inline-flex;align-items:center;gap:5px}
+.btn-purple:hover{background:#3C3489}
+.btn-purple:disabled{background:#AFA9EC;cursor:not-allowed}
+.btn-teal{background:#0F6E56;color:#fff;border:none;font-size:12px;padding:6px 14px;border-radius:var(--border-radius-md);cursor:pointer;display:inline-flex;align-items:center;gap:5px}
+.btn-teal:hover{background:#085041}
+.btn-teal:disabled{background:#9FE1CB;cursor:not-allowed}
+.btn-ghost{background:transparent;border:0.5px solid #AFA9EC;color:#534AB7;font-size:11px;padding:5px 10px;border-radius:var(--border-radius-md);cursor:pointer;display:inline-flex;align-items:center;gap:4px}
+.btn-ghost:hover{background:#EEEDFE}
+.btn-ghost.amber{border-color:#EF9F27;color:#633806}
+.btn-ghost.amber:hover{background:#FAEEDA}
+.btn-ghost.red{border-color:#F09595;color:#A32D2D}
+.btn-ghost.red:hover{background:#FCEBEB}
+textarea{width:100%;min-height:80px;resize:vertical;font-family:var(--font-mono);font-size:11px;border:0.5px solid #AFA9EC;border-radius:var(--border-radius-md);padding:6px 8px;background:#fff;color:var(--color-text-primary)}
+input[type=text],input[type=number]{background:#fff;border:0.5px solid #AFA9EC;border-radius:var(--border-radius-md);padding:6px 8px;font-size:12px;color:var(--color-text-primary)}
+input[type=text]:focus,input[type=number]:focus,textarea:focus{outline:none;border-color:#534AB7}
+.run-status{font-size:12px;color:#534AB7;flex:1;font-weight:500}
+.eta{font-size:11px;color:#854F0B;font-family:var(--font-mono)}
+</style>
+
+<div class="wrap">
+
+<div class="card">
+  <div class="section-header"><i class="ti ti-settings" aria-hidden="true"></i> Cấu hình</div>
+  <div class="row">
+    <div class="fg" style="flex:1;min-width:200px;">
+      <label>Worker base URL</label>
+      <input type="text" id="workerUrl" value="https://mscd1.duoctrexanh.workers.dev" style="width:100%" oninput="updatePreview()">
+    </div>
+    <div class="fg">
+      <label>Delay (ms)</label>
+      <input type="number" id="delayMs" value="800" min="200" max="5000" style="width:80px">
+    </div>
+    <div class="fg">
+      <label>Giới hạn/ngày</label>
+      <input type="number" id="dailyLimit" value="500" min="1" max="2000" style="width:80px">
+    </div>
+  </div>
+  <div class="url-preview" id="urlPreview"></div>
+</div>
+
+<div class="card teal">
+  <div class="section-header" style="color:#0F6E56"><i class="ti ti-list" aria-hidden="true"></i> Danh sách notifyNo</div>
+  <div class="row">
+    <div class="fg teal" style="flex:1;">
+      <label>Paste hoặc upload (1 dòng = 1 mã)</label>
+      <textarea id="pasteArea" placeholder="IB2400138756&#10;IB2400138757&#10;..."></textarea>
+    </div>
+  </div>
+  <div class="row">
+    <input type="file" id="fileInput" accept=".csv,.xlsx,.xls,.txt" style="display:none" onchange="handleFile(this)">
+    <button class="btn-ghost" onclick="document.getElementById('fileInput').click()">
+      <i class="ti ti-upload" aria-hidden="true"></i> Upload CSV/Excel/TXT
+    </button>
+    <span id="fileLabel" style="font-size:11px;color:#0F6E56;align-self:center;font-family:var(--font-mono)"></span>
+    <button class="btn-teal" onclick="loadList()">
+      <i class="ti ti-list-check" aria-hidden="true"></i> Nạp danh sách
+    </button>
+    <button class="btn-ghost red" onclick="clearProgress()">
+      <i class="ti ti-trash" aria-hidden="true"></i> Reset tiến độ
+    </button>
+  </div>
+</div>
+
+<div class="stat-row">
+  <div class="stat s-total"><div class="label">Tổng mã</div><div class="val" id="sTotal">—</div></div>
+  <div class="stat s-today"><div class="label">Hôm nay chạy</div><div class="val" id="sToday">0</div></div>
+  <div class="stat s-remain"><div class="label">Còn lại</div><div class="val" id="sRemain">—</div></div>
+  <div class="stat s-ok"><div class="label">Thành công</div><div class="val" id="sOk">0</div></div>
+  <div class="stat s-err"><div class="label">Lỗi</div><div class="val" id="sErr">0</div></div>
+</div>
+
+<div class="card amber">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+    <span class="run-status" id="runStatus" style="color:#633806;">Chưa chạy</span>
+    <span class="eta" id="etaBadge"></span>
+  </div>
+  <div class="progress-wrap"><div class="progress-bar" id="progressBar" style="width:0%"></div></div>
+  <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
+    <button class="btn-purple" id="btnRun" onclick="startRun()">
+      <i class="ti ti-player-play" aria-hidden="true"></i> Bắt đầu
+    </button>
+    <button class="btn-ghost" id="btnPause" onclick="togglePause()" disabled>
+      <i class="ti ti-player-pause" aria-hidden="true"></i> Tạm dừng
+    </button>
+    <button class="btn-ghost amber" onclick="skipToday()">
+      <i class="ti ti-refresh" aria-hidden="true"></i> Reset quota hôm nay
+    </button>
+  </div>
+</div>
+
+<div class="card log-card">
+  <div class="section-header" style="color:#5F5E5A"><i class="ti ti-terminal" aria-hidden="true"></i> Log</div>
+  <div class="log-box" id="logBox"></div>
+</div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+const KEY_LIST='nfr2_list',KEY_CURSOR='nfr2_cursor',KEY_DATE='nfr2_date',KEY_TCOUNT='nfr2_tcount',KEY_OK='nfr2_ok',KEY_ERR='nfr2_err';
+let allList=[],running=false,paused=false,abortFlag=false;
+function todayStr(){return new Date().toISOString().slice(0,10)}
+function save(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+function load(k,d){try{const v=localStorage.getItem(k);return v!==null?JSON.parse(v):d}catch(e){return d}}
+function buildUrl(n){const b=document.getElementById('workerUrl').value.trim().replace(/\/$/,'');return`${b}/result?notifyNo=${encodeURIComponent(n)}&refresh=1`}
+function updatePreview(){document.getElementById('urlPreview').textContent=buildUrl('IB2400138756')}
+function addLog(msg,cls=''){const box=document.getElementById('logBox');const d=document.createElement('div');d.className='log-line'+(cls?' '+cls:'');const t=new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit',second:'2-digit'});d.textContent=`[${t}] ${msg}`;box.appendChild(d);box.scrollTop=box.scrollHeight}
+function updateStats(){
+  const cursor=load(KEY_CURSOR,0),tcount=load(KEY_TCOUNT,0),ok=load(KEY_OK,0),err=load(KEY_ERR,0);
+  const total=allList.length,remain=Math.max(0,total-cursor);
+  const limit=parseInt(document.getElementById('dailyLimit').value)||500;
+  const delay=parseInt(document.getElementById('delayMs').value)||800;
+  document.getElementById('sTotal').textContent=total||'—';
+  document.getElementById('sToday').textContent=tcount;
+  document.getElementById('sRemain').textContent=total?remain:'—';
+  document.getElementById('sOk').textContent=ok;
+  document.getElementById('sErr').textContent=err;
+  const pct=total?Math.round((cursor/total)*100):0;
+  document.getElementById('progressBar').style.width=pct+'%';
+  const runnable=Math.min(Math.max(0,limit-tcount),remain);
+  if(runnable>0&&total){const sec=Math.round(runnable*delay/1000);const m=Math.floor(sec/60),s=sec%60;document.getElementById('etaBadge').textContent=`~${m}p${s}s còn lại hôm nay`}
+  else document.getElementById('etaBadge').textContent='';
+}
+function handleFile(input){
+  const file=input.files[0];if(!file)return;
+  document.getElementById('fileLabel').textContent=file.name;
+  const ext=file.name.split('.').pop().toLowerCase();
+  const reader=new FileReader();
+  reader.onload=e=>{
+    let codes=[];
+    if(ext==='xlsx'||ext==='xls'){const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});const ws=wb.Sheets[wb.SheetNames[0]];const rows=XLSX.utils.sheet_to_json(ws,{header:1});for(const row of rows){const cell=row[0];if(cell)codes.push(String(cell).trim())}}
+    else{const text=new TextDecoder().decode(new Uint8Array(e.target.result));codes=text.split(/\r?\n/).map(l=>l.split(',')[0].replace(/"/g,'').trim()).filter(Boolean)}
+    document.getElementById('pasteArea').value=codes.join('\n');
+    addLog(`Đọc file: ${codes.length} mã`,'ok');
+  };
+  reader.readAsArrayBuffer(file);
+}
+function loadList(){
+  const raw=document.getElementById('pasteArea').value.trim();
+  if(!raw){addLog('Chưa có dữ liệu','warn');return}
+  const codes=[...new Set(raw.split(/\r?\n/).map(l=>l.split(',')[0].replace(/"/g,'').trim()).filter(Boolean))];
+  allList=codes;save(KEY_LIST,codes);
+  const cursor=load(KEY_CURSOR,0);
+  addLog(`Nạp ${codes.length} mã. Cursor: ${cursor}`,'ok');
+  updateStats();
+  document.getElementById('runStatus').textContent=`Sẵn sàng — ${codes.length} mã, đã chạy ${cursor}`;
+}
+function clearProgress(){save(KEY_CURSOR,0);save(KEY_DATE,'');save(KEY_TCOUNT,0);save(KEY_OK,0);save(KEY_ERR,0);addLog('Đã reset toàn bộ tiến độ','warn');updateStats()}
+function skipToday(){save(KEY_DATE,'');save(KEY_TCOUNT,0);addLog('Đã reset quota hôm nay','warn');updateStats()}
+function togglePause(){
+  if(!running)return;paused=!paused;
+  const btn=document.getElementById('btnPause');
+  if(paused){btn.innerHTML='<i class="ti ti-player-play" aria-hidden="true"></i> Tiếp tục';addLog('Tạm dừng','warn')}
+  else{btn.innerHTML='<i class="ti ti-player-pause" aria-hidden="true"></i> Tạm dừng';addLog('Tiếp tục chạy','')}
+}
+async function startRun(){
+  if(running&&!paused)return;
+  if(paused){togglePause();return}
+  const workerUrl=document.getElementById('workerUrl').value.trim();
+  if(!workerUrl){addLog('Chưa nhập Worker URL','err');return}
+  if(!allList.length){const stored=load(KEY_LIST,[]);if(!stored.length){addLog('Chưa nạp danh sách','err');return}allList=stored;addLog(`Khôi phục ${allList.length} mã`,'ok');updateStats()}
+  const limit=parseInt(document.getElementById('dailyLimit').value)||500;
+  const delay=parseInt(document.getElementById('delayMs').value)||800;
+  const today=todayStr();
+  let savedDate=load(KEY_DATE,''),tcount=load(KEY_TCOUNT,0);
+  if(savedDate!==today){tcount=0;save(KEY_DATE,today);save(KEY_TCOUNT,0);addLog(`Ngày mới (${today}) — quota reset`,'')}
+  if(tcount>=limit){addLog(`Đã đủ ${limit} request hôm nay. Quay lại ngày mai.`,'warn');document.getElementById('runStatus').textContent=`Hết quota hôm nay (${tcount}/${limit})`;return}
+  let cursor=load(KEY_CURSOR,0);
+  if(cursor>=allList.length){addLog('Hoàn thành toàn bộ danh sách!','ok');document.getElementById('runStatus').textContent='Hoàn thành toàn bộ!';return}
+  running=true;paused=false;abortFlag=false;
+  document.getElementById('btnRun').disabled=true;
+  document.getElementById('btnPause').disabled=false;
+  const canRun=Math.min(limit-tcount,allList.length-cursor);
+  addLog(`Bắt đầu: ${canRun} request (quota còn ${limit-tcount}, cursor=${cursor})`,'');
+  let ok=load(KEY_OK,0),err=load(KEY_ERR,0);
+  for(let i=0;i<canRun&&!abortFlag;i++){
+    while(paused&&!abortFlag)await new Promise(r=>setTimeout(r,200));
+    if(abortFlag)break;
+    const notifyNo=allList[cursor];
+    document.getElementById('runStatus').textContent=`[${cursor+1}/${allList.length}] ${notifyNo}`;
+    try{const res=await fetch(buildUrl(notifyNo));if(!res.ok)throw new Error('HTTP '+res.status);ok++;save(KEY_OK,ok);addLog(`OK  ${notifyNo}`,'ok')}
+    catch(e){err++;save(KEY_ERR,err);addLog(`ERR ${notifyNo} — ${e.message}`,'err')}
+    cursor++;tcount++;save(KEY_CURSOR,cursor);save(KEY_TCOUNT,tcount);updateStats();
+    if(i<canRun-1&&!abortFlag)await new Promise(r=>setTimeout(r,delay));
+  }
+  running=false;
+  document.getElementById('btnRun').disabled=false;
+  document.getElementById('btnPause').disabled=true;
+  document.getElementById('btnPause').innerHTML='<i class="ti ti-player-pause" aria-hidden="true"></i> Tạm dừng';
+  if(abortFlag){addLog(`Dừng tại cursor=${cursor}`,'warn');document.getElementById('runStatus').textContent=`Đã dừng tại ${cursor}/${allList.length}`}
+  else if(cursor>=allList.length){addLog('Hoàn thành toàn bộ!','ok');document.getElementById('runStatus').textContent='Hoàn thành toàn bộ!'}
+  else{addLog(`Hết quota ${limit}/ngày. Cursor=${cursor}. Ngày mai tiếp tục.`,'warn');document.getElementById('runStatus').textContent=`Hết quota — ngày mai tiếp tục từ mã ${cursor+1}`}
+}
+window.addEventListener('beforeunload',()=>{if(running)abortFlag=true});
+(function init(){
+  const stored=load(KEY_LIST,[]);
+  if(stored.length){allList=stored;document.getElementById('pasteArea').value=stored.join('\n')}
+  if(load(KEY_DATE,'')!==todayStr()){save(KEY_TCOUNT,0);save(KEY_DATE,todayStr())}
+  updateStats();
+  if(stored.length)addLog(`Khôi phục ${stored.length} mã, cursor tại ${load(KEY_CURSOR,0)}`,'ok');
+  updatePreview();
+})();
+</script>
