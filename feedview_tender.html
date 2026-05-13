@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gói Thầu Thuốc</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Vietnamese:wght@300;400;500;600&display=swap');
+
+  :root {
+    --bg:        #0f1117;
+    --bg2:       #161b27;
+    --bg3:       #1e2535;
+    --border:    #2a3248;
+    --accent:    #3b82f6;
+    --accent2:   #22d3ee;
+    --green:     #10b981;
+    --red:       #ef4444;
+    --orange:    #f97316;
+    --yellow:    #eab308;
+    --text:      #e2e8f0;
+    --text2:     #94a3b8;
+    --text3:     #475569;
+    --mono:      'IBM Plex Mono', monospace;
+    --sans:      'IBM Plex Sans Vietnamese', sans-serif;
+    --radius:    6px;
+    --tab-h:     40px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 13px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ── HEADER ── */
+  #knghi_header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 16px;
+    height: 48px;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  #knghi_header .knghi_logo {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent2);
+    letter-spacing: 0.05em;
+  }
+  #knghi_header .knghi_sep { color: var(--border); }
+  #knghi_header .knghi_title { color: var(--text2); font-size: 12px; }
+  #knghi_header .knghi_ver { margin-left: auto; font-family: var(--mono); font-size: 11px; color: var(--text3); }
+
+  /* ── TABS ── */
+  #knghi_tabs {
+    display: flex;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    padding: 0 16px;
+    gap: 2px;
+  }
+  .knghi_tab {
+    height: var(--tab-h);
+    padding: 0 16px;
+    border: none;
+    background: transparent;
+    color: var(--text2);
+    font-family: var(--sans);
+    font-size: 12px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: color .15s, border-color .15s;
+    white-space: nowrap;
+  }
+  .knghi_tab:hover { color: var(--text); }
+  .knghi_tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* ── PANELS ── */
+  .knghi_panel { display: none; flex: 1; flex-direction: column; overflow: hidden; }
+  .knghi_panel.active { display: flex; }
+
+  /* ── TOOLBAR ── */
+  .knghi_toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+    flex-shrink: 0;
+  }
+  .knghi_toolbar label { font-size: 11px; color: var(--text2); white-space: nowrap; }
+
+  input[type="text"], input[type="date"] {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 5px 10px;
+    border-radius: var(--radius);
+    font-family: var(--mono);
+    font-size: 12px;
+    outline: none;
+    transition: border-color .15s;
+  }
+  input[type="text"]:focus, input[type="date"]:focus { border-color: var(--accent); }
+  input[type="date"] { width: 130px; }
+  input[type="text"].knghi_short { width: 110px; }
+  input[type="text"].knghi_med   { width: 160px; }
+  input[type="text"].knghi_long  { width: 200px; }
+
+  .knghi_btn {
+    padding: 5px 14px;
+    border-radius: var(--radius);
+    border: none;
+    font-family: var(--sans);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity .15s, transform .1s;
+    white-space: nowrap;
+  }
+  .knghi_btn:hover { opacity: .85; }
+  .knghi_btn:active { transform: scale(.97); }
+  .knghi_btn:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+  .knghi_btn.primary  { background: var(--accent); color: #fff; }
+  .knghi_btn.green    { background: var(--green); color: #fff; }
+  .knghi_btn.orange   { background: var(--orange); color: #fff; }
+  .knghi_btn.teal     { background: #0891b2; color: #fff; }
+  .knghi_btn.danger   { background: var(--red); color: #fff; }
+  .knghi_btn.ghost    { background: var(--bg3); color: var(--text); border: 1px solid var(--border); }
+
+  .knghi_check {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 11px; color: var(--text2); cursor: pointer; user-select: none;
+  }
+  .knghi_check input { accent-color: var(--accent); width: 13px; height: 13px; }
+
+  #knghi_status1, #knghi_status2 {
+    font-family: var(--mono); font-size: 11px; color: var(--text2);
+    margin-left: 4px;
+  }
+
+  /* ── TABLE WRAPPER ── */
+  .knghi_table_wrap {
+    flex: 1;
+    overflow: auto;
+    padding: 0;
+  }
+
+  table.knghi_tbl {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  table.knghi_tbl thead th {
+    position: sticky; top: 0; z-index: 2;
+    background: var(--bg3);
+    color: var(--text2);
+    font-weight: 600;
+    font-family: var(--mono);
+    font-size: 11px;
+    text-align: left;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+  }
+  table.knghi_tbl thead th:hover { color: var(--text); }
+  table.knghi_tbl tbody tr {
+    border-bottom: 1px solid #1a2030;
+    transition: background .1s;
+  }
+  table.knghi_tbl tbody tr:hover { background: #1a2235; }
+  table.knghi_tbl tbody tr.cancelled td { color: var(--red); opacity: .7; }
+  table.knghi_tbl tbody tr.selected { background: #1e3a5f !important; }
+  table.knghi_tbl td {
+    padding: 7px 10px;
+    color: var(--text);
+    vertical-align: middle;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 300px;
+  }
+  table.knghi_tbl td.mono { font-family: var(--mono); font-size: 11px; }
+  table.knghi_tbl td.center { text-align: center; }
+  .knghi_badge {
+    display: inline-block; padding: 2px 7px; border-radius: 3px;
+    font-family: var(--mono); font-size: 10px; font-weight: 600;
+  }
+  .knghi_badge.active { background: #0f3a2a; color: var(--green); }
+  .knghi_badge.cancel { background: #3a0f0f; color: var(--red); }
+
+  /* ── BOTTOM STATUS / PROGRESS ── */
+  #knghi_footer {
+    display: flex; align-items: center; gap: 12px;
+    padding: 6px 16px;
+    background: var(--bg2);
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+    font-family: var(--mono); font-size: 11px; color: var(--text3);
+  }
+  #knghi_progress_wrap { flex: 1; height: 4px; background: var(--bg3); border-radius: 2px; overflow: hidden; }
+  #knghi_progress_bar  { height: 100%; background: var(--accent); width: 0%; transition: width .2s; }
+  #knghi_footer_msg { white-space: nowrap; }
+
+  /* ── TAB2 LAYOUT ── */
+  #knghi_panel2 { flex-direction: column; }
+  #knghi_input_area {
+    padding: 10px 16px;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  #knghi_input_area label { font-size: 11px; color: var(--text2); display: block; margin-bottom: 5px; }
+  #knghi_txt_input {
+    width: 100%; height: 80px;
+    background: var(--bg3); border: 1px solid var(--border);
+    color: var(--text); font-family: var(--mono); font-size: 12px;
+    padding: 8px 10px; border-radius: var(--radius); resize: vertical; outline: none;
+    transition: border-color .15s;
+  }
+  #knghi_txt_input:focus { border-color: var(--accent); }
+
+  /* ── LOG ── */
+  #knghi_log_wrap {
+    flex: 1; overflow: hidden; display: flex; flex-direction: column; padding: 8px 16px 0;
+  }
+  #knghi_log_label { font-size: 11px; color: var(--text3); margin-bottom: 4px; font-family: var(--mono); }
+  #knghi_log {
+    flex: 1; overflow-y: auto;
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 8px 12px;
+    font-family: var(--mono); font-size: 11px; line-height: 1.8;
+    color: var(--text2);
+  }
+  #knghi_log .ok   { color: var(--green); }
+  #knghi_log .err  { color: var(--red); }
+  #knghi_log .warn { color: var(--yellow); }
+  #knghi_log .info { color: var(--accent2); }
+
+  /* ── WORKER CONFIG ── */
+  #knghi_cfg {
+    padding: 8px 16px;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    flex-shrink: 0;
+  }
+  #knghi_cfg label { font-size: 11px; color: var(--text2); }
+  #knghi_cfg input[type="text"] { width: 340px; }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text3); }
+
+  /* context menu */
+  #knghi_ctx {
+    position: fixed; z-index: 9999;
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 4px 0;
+    box-shadow: 0 8px 24px rgba(0,0,0,.5);
+    display: none;
+  }
+  #knghi_ctx div {
+    padding: 7px 16px; font-size: 12px; cursor: pointer; color: var(--text);
+    transition: background .1s;
+  }
+  #knghi_ctx div:hover { background: var(--bg2); }
+
+  .knghi_divider { width: 1px; height: 20px; background: var(--border); flex-shrink: 0; }
+
+  /* worker slider */
+  #knghi_workers_lbl { font-family: var(--mono); font-size: 12px; color: var(--accent2); min-width: 14px; }
+  input[type="range"] {
+    accent-color: var(--accent); width: 90px; cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div id="knghi_header">
+  <span class="knghi_logo">MSC</span>
+  <span class="knghi_sep">/</span>
+  <span class="knghi_title">Tool lấy dữ liệu Gói Thầu Thuốc</span>
+  <span class="knghi_ver">v1.0</span>
+</div>
+
+<!-- TABS -->
+<div id="knghi_tabs">
+  <button class="knghi_tab active" onclick="knghi_switchTab(1)">🔍 1. Tìm kiếm mã TBMT</button>
+  <button class="knghi_tab" onclick="knghi_switchTab(2)">⬇️ 2. Lấy chi tiết PVCC & Mở thầu</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     PANEL 1: SEARCH
+════════════════════════════════════════════════════════════ -->
+<div id="knghi_panel1" class="knghi_panel active">
+
+  <!-- Toolbar -->
+  <div class="knghi_toolbar">
+    <label>Từ ngày</label>
+    <input type="date" id="knghi_from">
+    <label>Đến</label>
+    <input type="date" id="knghi_to">
+    <button class="knghi_btn primary" id="knghi_btn_search" onclick="knghi_startSearch()">🔍 Tải dữ liệu</button>
+    <span id="knghi_status1">Sẵn sàng</span>
+    <div class="knghi_divider"></div>
+    <input type="text" class="knghi_short" id="knghi_f_code"     placeholder="Lọc mã TBMT…"    oninput="knghi_applyFilter()">
+    <input type="text" class="knghi_long"  id="knghi_f_name"     placeholder="Lọc tên gói thầu…" oninput="knghi_applyFilter()">
+    <input type="text" class="knghi_med"   id="knghi_f_investor" placeholder="Lọc bên mời thầu…" oninput="knghi_applyFilter()">
+    <label class="knghi_check">
+      <input type="checkbox" id="knghi_chk_hide_cancel" onchange="knghi_applyFilter()">
+      <span style="color:var(--red)">Ẩn mã đã hủy</span>
+    </label>
+    <div class="knghi_divider"></div>
+    <button class="knghi_btn green"  onclick="knghi_transferData()">➡️ Thay thế Tab 2</button>
+    <button class="knghi_btn orange" onclick="knghi_appendData()">➕ Bổ sung Tab 2</button>
+    <button class="knghi_btn teal"   onclick="knghi_exportSearch()">📤 Xuất Excel</button>
+  </div>
+
+  <!-- Table -->
+  <div class="knghi_table_wrap">
+    <table class="knghi_tbl" id="knghi_tbl1">
+      <thead>
+        <tr>
+          <th style="width:44px">#</th>
+          <th style="width:140px">Mã TBMT</th>
+          <th style="min-width:280px">Tên Gói Thầu</th>
+          <th style="min-width:180px">Bên Mời Thầu</th>
+          <th style="width:95px">Ngày đăng</th>
+          <th style="width:95px">Đóng thầu</th>
+          <th style="width:60px">Mã TT</th>
+          <th style="width:90px">Loại TT</th>
+        </tr>
+      </thead>
+      <tbody id="knghi_tbody1"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     PANEL 2: CRAWLER
+════════════════════════════════════════════════════════════ -->
+<div id="knghi_panel2" class="knghi_panel">
+
+  <!-- Worker config -->
+  <div id="knghi_cfg">
+    <label>Worker URL:</label>
+    <input type="text" id="knghi_worker_url" placeholder="https://msc.medtendervn.workers.dev">
+    <label>API Key:</label>
+    <input type="text" id="knghi_api_key" placeholder="key…" style="width:160px">
+    <label style="margin-left:8px">Batch size:</label>
+    <input type="range" id="knghi_slider" min="1" max="20" value="5" oninput="knghi_onSlide(this.value)">
+    <span id="knghi_workers_lbl">5</span>
+  </div>
+
+  <!-- Input -->
+  <div id="knghi_input_area">
+    <label>Danh sách Mã TBMT (tự nhận từ Tab 1, hoặc nhập tay — mỗi dòng / cách nhau dấu phẩy/space):</label>
+    <textarea id="knghi_txt_input" placeholder="IB2500…&#10;IB2500…"></textarea>
+  </div>
+
+  <!-- Buttons -->
+  <div class="knghi_toolbar">
+    <button class="knghi_btn primary" id="knghi_btn_start" onclick="knghi_startCrawl()">▶️ Bắt đầu lấy dữ liệu</button>
+    <button class="knghi_btn danger"  id="knghi_btn_stop"  onclick="knghi_stopCrawl()" disabled>⛔ Dừng lại</button>
+    <div class="knghi_divider"></div>
+    <label class="knghi_check">
+      <input type="checkbox" id="knghi_chk_autoopen" checked>
+      <span>Tự mở Excel sau khi xong</span>
+    </label>
+    <span id="knghi_status2" style="margin-left:auto"></span>
+  </div>
+
+  <!-- Log -->
+  <div id="knghi_log_wrap">
+    <div id="knghi_log_label">Nhật ký xử lý</div>
+    <div id="knghi_log"></div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div id="knghi_footer">
+  <div id="knghi_progress_wrap"><div id="knghi_progress_bar"></div></div>
+  <span id="knghi_footer_msg">—</span>
+  <span style="margin-left:auto">Tue.Tran</span>
+</div>
+
+<!-- CONTEXT MENU -->
+<div id="knghi_ctx">
+  <div onclick="knghi_copySelected()">📋 Copy Mã TBMT</div>
+  <div onclick="knghi_transferSelected()">➡️ Chuyển sang Tab 2</div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  NAMESPACE: knghi_  (tránh đụng biến khi nhúng vào file khác)
+// ═══════════════════════════════════════════════════════════════
+
+// ── STATE ────────────────────────────────────────────────────
+let knghi_allResults  = [];   // raw search results
+let knghi_isCrawling  = false;
+let knghi_stopFlag    = false;
+let knghi_batchSize   = 5;
+let knghi_sortCol     = -1;
+let knghi_sortAsc     = true;
+
+// ── INIT ─────────────────────────────────────────────────────
+(function knghi_init() {
+  const now = new Date();
+  const y = now.getFullYear(), m = String(now.getMonth()+1).padStart(2,'0');
+  const d = String(now.getDate()).padStart(2,'0');
+  const first = `${y}-${m}-01`;
+  const today = `${y}-${m}-${d}`;
+  document.getElementById('knghi_from').value = first;
+  document.getElementById('knghi_to').value   = today;
+
+  // Load saved config
+  const saved = localStorage.getItem('knghi_cfg');
+  if (saved) {
+    try {
+      const c = JSON.parse(saved);
+      if (c.url) document.getElementById('knghi_worker_url').value = c.url;
+      if (c.key) document.getElementById('knghi_api_key').value    = c.key;
+    } catch(e) {}
+  }
+
+  // Save config on change
+  ['knghi_worker_url','knghi_api_key'].forEach(id => {
+    document.getElementById(id).addEventListener('change', knghi_saveCfg);
+  });
+
+  // Context menu dismiss
+  document.addEventListener('click', () => {
+    document.getElementById('knghi_ctx').style.display = 'none';
+  });
+
+  // Right-click on table
+  document.getElementById('knghi_tbody1').addEventListener('contextmenu', e => {
+    e.preventDefault();
+    const tr = e.target.closest('tr');
+    if (!tr) return;
+    if (!tr.classList.contains('selected')) {
+      document.querySelectorAll('#knghi_tbody1 tr.selected').forEach(r => r.classList.remove('selected'));
+      tr.classList.add('selected');
+    }
+    const ctx = document.getElementById('knghi_ctx');
+    ctx.style.display = 'block';
+    ctx.style.left = e.clientX + 'px';
+    ctx.style.top  = e.clientY + 'px';
+  });
+
+  // Ctrl+C
+  document.addEventListener('keydown', e => {
+    if (e.ctrlKey && e.key === 'c') knghi_copySelected();
+  });
+
+  // Click row to select (multi with Ctrl/Shift)
+  document.getElementById('knghi_tbody1').addEventListener('click', e => {
+    const tr = e.target.closest('tr');
+    if (!tr) return;
+    if (e.ctrlKey || e.metaKey) {
+      tr.classList.toggle('selected');
+    } else {
+      document.querySelectorAll('#knghi_tbody1 tr.selected').forEach(r => r.classList.remove('selected'));
+      tr.classList.add('selected');
+    }
+  });
+})();
+
+function knghi_saveCfg() {
+  localStorage.setItem('knghi_cfg', JSON.stringify({
+    url: document.getElementById('knghi_worker_url').value.trim(),
+    key: document.getElementById('knghi_api_key').value.trim(),
+  }));
+}
+
+// ── TABS ─────────────────────────────────────────────────────
+function knghi_switchTab(n) {
+  document.querySelectorAll('.knghi_tab').forEach((t,i) => t.classList.toggle('active', i===n-1));
+  document.querySelectorAll('.knghi_panel').forEach((p,i) => p.classList.toggle('active', i===n-1));
+}
+
+// ── HELPERS ──────────────────────────────────────────────────
+function knghi_isCancelled(item) {
+  const sn = String(item.statusNotify || '').toUpperCase();
+  return sn.startsWith('DH') || sn.startsWith('ĐH') || String(item.status) === '03';
+}
+
+function knghi_setStatus1(msg) { document.getElementById('knghi_status1').textContent = msg; }
+function knghi_setStatus2(msg) { document.getElementById('knghi_status2').textContent = msg; }
+function knghi_setProgress(v)  { document.getElementById('knghi_progress_bar').style.width = (v*100)+'%'; }
+function knghi_setFooter(msg)  { document.getElementById('knghi_footer_msg').textContent = msg; }
+
+function knghi_log(msg, cls='') {
+  const el = document.getElementById('knghi_log');
+  const t  = new Date().toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+  const line = document.createElement('div');
+  if (cls) line.className = cls;
+  line.textContent = `[${t}] ${msg}`;
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+}
+
+function knghi_clearLog() {
+  document.getElementById('knghi_log').innerHTML = '';
+}
+
+function knghi_onSlide(v) {
+  knghi_batchSize = parseInt(v);
+  document.getElementById('knghi_workers_lbl').textContent = v;
+}
+
+function knghi_getWorkerBase() {
+  return (document.getElementById('knghi_worker_url').value.trim() || 'https://msc.medtendervn.workers.dev').replace(/\/$/, '');
+}
+function knghi_getApiKey() {
+  return document.getElementById('knghi_api_key').value.trim();
+}
+function knghi_workerUrl(path) {
+  const key = knghi_getApiKey();
+  const sep = path.includes('?') ? '&' : '?';
+  return `${knghi_getWorkerBase()}${path}${key ? sep+'key='+encodeURIComponent(key) : ''}`;
+}
+
+// ── SEARCH TAB ────────────────────────────────────────────────
+async function knghi_startSearch() {
+  const from = document.getElementById('knghi_from').value;
+  const to   = document.getElementById('knghi_to').value;
+  if (!from || !to) { knghi_setStatus1('⚠️ Chọn đủ ngày!'); return; }
+
+  document.getElementById('knghi_btn_search').disabled = true;
+  document.getElementById('knghi_btn_search').textContent = 'Đang tải…';
+  knghi_allResults = [];
+  knghi_renderTable([]);
+  knghi_setProgress(0);
+
+  try {
+    // Build date list
+    const dates = [];
+    for (let d = new Date(from); d <= new Date(to); d.setDate(d.getDate()+1)) {
+      dates.push(d.toISOString().substring(0,10));
+    }
+
+    knghi_setStatus1(`Đang tải ${dates.length} ngày qua worker…`);
+    knghi_setFooter(`Từ ${from} → ${to}`);
+
+    // Fetch mỗi ngày từ worker KV (nếu có) rồi ghép
+    let done = 0;
+    const results = [];
+
+    // Thử GET /tbmt với range
+    const url = knghi_workerUrl(`/tbmt?from=${from}&to=${to}&detail=0`);
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Worker lỗi ${res.status}: ${await res.text()}`);
+    const data = await res.json();
+    results.push(...(data.items || []));
+
+    // Normalize field names (worker trả camelCase)
+    knghi_allResults = results.map(r => ({
+      notifyNo:     r.notifyNo,
+      bidName:      r.bidName,
+      investor:     r.investor,
+      publicDate:   r.publicDate,
+      closeDate:    r.closeDate,
+      status:       r.status,
+      statusNotify: r.statusNotify,
+    }));
+
+    knghi_applyFilter();
+    knghi_setStatus1(`✅ ${knghi_allResults.length} gói thầu`);
+    knghi_setProgress(1);
+    knghi_setFooter(`Tổng: ${knghi_allResults.length} gói — ${from} → ${to}`);
+
+  } catch(e) {
+    knghi_setStatus1(`❌ ${e.message}`);
+    knghi_setFooter(e.message);
+  } finally {
+    document.getElementById('knghi_btn_search').disabled = false;
+    document.getElementById('knghi_btn_search').textContent = '🔍 Tải dữ liệu';
+  }
+}
+
+// ── FILTER ───────────────────────────────────────────────────
+function knghi_applyFilter() {
+  const fc = document.getElementById('knghi_f_code').value.toLowerCase().trim();
+  const fn = document.getElementById('knghi_f_name').value.toLowerCase().trim();
+  const fi = document.getElementById('knghi_f_investor').value.toLowerCase().trim();
+  const hideCancel = document.getElementById('knghi_chk_hide_cancel').checked;
+
+  const filtered = knghi_allResults.filter(r =>
+    (!fc || r.notifyNo.toLowerCase().includes(fc)) &&
+    (!fn || r.bidName.toLowerCase().includes(fn)) &&
+    (!fi || r.investor.toLowerCase().includes(fi)) &&
+    !(hideCancel && knghi_isCancelled(r))
+  );
+
+  knghi_renderTable(filtered);
+  knghi_setStatus1(`${filtered.length} / ${knghi_allResults.length} gói`);
+}
+
+function knghi_renderTable(data) {
+  const tbody = document.getElementById('knghi_tbody1');
+  tbody.innerHTML = '';
+  data.forEach((item, idx) => {
+    const tr = document.createElement('tr');
+    if (knghi_isCancelled(item)) tr.classList.add('cancelled');
+    tr.dataset.notifyNo = item.notifyNo;
+    const sn = item.statusNotify || '';
+    const isCan = knghi_isCancelled(item);
+    tr.innerHTML = `
+      <td class="mono center">${idx+1}</td>
+      <td class="mono">${item.notifyNo}</td>
+      <td title="${item.bidName}">${item.bidName}</td>
+      <td title="${item.investor}">${item.investor}</td>
+      <td class="mono center">${item.publicDate}</td>
+      <td class="mono center">${item.closeDate}</td>
+      <td class="mono center">${item.status}</td>
+      <td class="center"><span class="knghi_badge ${isCan?'cancel':'active'}">${sn}</span></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// ── COPY / CONTEXT MENU ──────────────────────────────────────
+function knghi_getSelectedCodes() {
+  const selected = document.querySelectorAll('#knghi_tbody1 tr.selected');
+  if (selected.length > 0) return [...selected].map(tr => tr.dataset.notifyNo).filter(Boolean);
+  // fallback: tất cả visible
+  return [...document.querySelectorAll('#knghi_tbody1 tr')].map(tr => tr.dataset.notifyNo).filter(Boolean);
+}
+
+function knghi_copySelected() {
+  const codes = knghi_getSelectedCodes();
+  if (!codes.length) return;
+  navigator.clipboard.writeText(codes.join('\n')).catch(() => {});
+  knghi_setStatus1(`✅ Đã copy ${codes.length} mã`);
+}
+
+function knghi_transferSelected() {
+  const codes = knghi_getSelectedCodes();
+  if (!codes.length) return;
+  document.getElementById('knghi_txt_input').value = codes.join('\n');
+  knghi_switchTab(2);
+}
+
+// ── TRANSFER / APPEND ─────────────────────────────────────────
+function knghi_transferData() {
+  const trs = document.querySelectorAll('#knghi_tbody1 tr');
+  if (!trs.length) { knghi_setStatus1('⚠️ Bảng trống!'); return; }
+  const codes = [...trs].map(tr => tr.dataset.notifyNo).filter(Boolean);
+  document.getElementById('knghi_txt_input').value = codes.join('\n');
+  knghi_switchTab(2);
+  knghi_log(`Đã thay thế danh sách: ${codes.length} mã từ Tab 1`, 'info');
+}
+
+function knghi_appendData() {
+  const trs = document.querySelectorAll('#knghi_tbody1 tr');
+  if (!trs.length) { knghi_setStatus1('⚠️ Bảng trống!'); return; }
+  const newCodes = [...trs].map(tr => tr.dataset.notifyNo).filter(Boolean);
+  const cur = document.getElementById('knghi_txt_input').value.trim();
+  const existing = new Set(cur ? cur.split(/[\s,]+/).filter(Boolean) : []);
+  const toAdd = newCodes.filter(c => !existing.has(c));
+  if (!toAdd.length) { knghi_setStatus1('⚠️ Tất cả mã đã có!'); return; }
+  const sep = cur ? '\n' : '';
+  document.getElementById('knghi_txt_input').value = cur + sep + toAdd.join('\n');
+  knghi_switchTab(2);
+  knghi_log(`Đã bổ sung ${toAdd.length} mã mới vào Tab 2`, 'info');
+}
+
+// ── EXPORT SEARCH ─────────────────────────────────────────────
+function knghi_exportSearch() {
+  const trs = document.querySelectorAll('#knghi_tbody1 tr');
+  if (!trs.length) { knghi_setStatus1('⚠️ Bảng trống!'); return; }
+  const rows = [[' STT','Mã TBMT','Tên Gói Thầu','Bên Mời Thầu','Ngày đăng','Ngày đóng','Mã TT','Loại TT']];
+  trs.forEach((tr, i) => {
+    const td = tr.querySelectorAll('td');
+    rows.push([i+1, ...[...td].map(t => t.dataset.notifyNo !== undefined ? tr.dataset.notifyNo : t.textContent.trim())]);
+  });
+  // Đơn giản hơn: lấy trực tiếp từ filter data
+  const filtered = knghi_allResults.filter(r => {
+    const fc = document.getElementById('knghi_f_code').value.toLowerCase().trim();
+    const fn = document.getElementById('knghi_f_name').value.toLowerCase().trim();
+    const fi = document.getElementById('knghi_f_investor').value.toLowerCase().trim();
+    const hideCancel = document.getElementById('knghi_chk_hide_cancel').checked;
+    return (!fc || r.notifyNo.toLowerCase().includes(fc)) &&
+           (!fn || r.bidName.toLowerCase().includes(fn)) &&
+           (!fi || r.investor.toLowerCase().includes(fi)) &&
+           !(hideCancel && knghi_isCancelled(r));
+  });
+  const exportRows = [['STT','Mã TBMT','Tên Gói Thầu','Bên Mời Thầu','Ngày đăng','Ngày đóng','Mã TT','Loại TT']];
+  filtered.forEach((r,i) => exportRows.push([i+1, r.notifyNo, r.bidName, r.investor, r.publicDate, r.closeDate, r.status, r.statusNotify]));
+  const ws = XLSX.utils.aoa_to_sheet(exportRows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Danh sách TBMT');
+  XLSX.writeFile(wb, `Danh_Sach_Goi_Thau_${knghi_ts()}.xlsx`);
+}
+
+// ── CRAWL TAB ─────────────────────────────────────────────────
+function knghi_stopCrawl() {
+  knghi_stopFlag = true;
+  document.getElementById('knghi_btn_stop').disabled = true;
+  document.getElementById('knghi_btn_stop').textContent = 'Đang dừng…';
+  knghi_log('🛑 Đã nhận lệnh dừng…', 'warn');
+}
+
+async function knghi_startCrawl() {
+  const raw = document.getElementById('knghi_txt_input').value.trim();
+  if (!raw) { knghi_log('⚠️ Chưa nhập mã TBMT!', 'warn'); return; }
+
+  const all = raw.split(/[\s,]+/).map(s => s.trim()).filter(Boolean);
+  const valid   = all.filter(n => n.startsWith('IB') && n.length >= 10);
+  const invalid = all.filter(n => !(n.startsWith('IB') && n.length >= 10));
+
+  knghi_clearLog();
+
+  if (invalid.length) {
+    knghi_log(`⚠️ ${invalid.length} mã sai định dạng bị bỏ qua: ${invalid.slice(0,5).join(', ')}${invalid.length>5?'…':''}`, 'warn');
+  }
+  if (!valid.length) { knghi_log('❌ Không có mã hợp lệ nào!', 'err'); return; }
+
+  const workerBase = knghi_getWorkerBase();
+  const apiKey     = knghi_getApiKey();
+  if (!workerBase) { knghi_log('❌ Chưa nhập Worker URL!', 'err'); return; }
+
+  knghi_isCrawling = true;
+  knghi_stopFlag   = false;
+  document.getElementById('knghi_btn_start').disabled = true;
+  document.getElementById('knghi_btn_start').textContent = 'Đang xử lý…';
+  document.getElementById('knghi_btn_stop').disabled = false;
+  document.getElementById('knghi_btn_stop').textContent = '⛔ Dừng lại';
+  knghi_setProgress(0);
+
+  knghi_log(`🚀 Bắt đầu: ${valid.length} mã | batch ${knghi_batchSize}`, 'info');
+
+  const allGeneral = [], allPvcc = [], allOpen = [], failed = [];
+  const total = valid.length;
+  let done = 0;
+
+  // Xử lý theo batch
+  for (let i = 0; i < valid.length; i += knghi_batchSize) {
+    if (knghi_stopFlag) {
+      knghi_log('🛑 Đã dừng theo yêu cầu.', 'warn');
+      break;
+    }
+
+    const batch = valid.slice(i, i + knghi_batchSize);
+    knghi_log(`📦 Batch ${Math.floor(i/knghi_batchSize)+1}: ${batch.join(', ')}`, 'info');
+
+    try {
+      const url = `${workerBase}/tbmt/fetch-batch${apiKey ? '?key='+encodeURIComponent(apiKey) : ''}`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notifyNos: batch })
+      });
+
+      if (!res.ok) {
+        const txt = await res.text();
+        throw new Error(`HTTP ${res.status}: ${txt}`);
+      }
+
+      const data = await res.json();
+
+      // errors từ worker
+      (data.errors || []).forEach(e => {
+        knghi_log(`⚠️ ${e.notifyNo}: ${e.error}`, 'warn');
+        failed.push(e.notifyNo);
+      });
+
+      // Process items
+      (data.items || []).forEach(item => {
+        // General
+        allGeneral.push({
+          'Mã TBMT':      item.notifyNo,
+          'Tên gói':      item.bidName,
+          'Bên mời thầu': item.investor,
+          'Giá gói':      item.bidPrice || '',
+          'Ngày đăng':    item.publicDate,
+          'Địa điểm':     item.locs || '',
+          'Trạng thái':   item.status,
+          'Ngày mở thầu': item.bidOpenDate || '',
+        });
+
+        // PVCC
+        (item.pvcc || []).forEach(lot => {
+          allPvcc.push({
+            'Mã TBMT':              item.notifyNo,
+            'Tên gói thầu':         item.bidName,
+            'Bên mời thầu':         item.investor,
+            'Địa điểm':             item.locs || '',
+            'Ngày mở thầu':         item.bidOpenDate || '',
+            'Mã phần lô':           lot.lotNo,
+            'Mã thuốc':             lot.medicineCode,
+            'Tên thuốc':            lot.tenThuoc,
+            'Tên hoạt chất':        lot.lotName,
+            'Nồng độ/hàm lượng':   lot.nongDo,
+            'Đường dùng':           lot.duongDung,
+            'Dạng bào chế':         lot.dangBaoChe,
+            'Đơn vị tính':          lot.uom,
+            'Số lượng':             lot.quantity,
+            'Giá kế hoạch':         lot.pricePlan,
+            'Nhóm thuốc':           lot.groupMedicine,
+          });
+        });
+
+        // Open bid
+        (item.open || []).forEach(view => {
+          allOpen.push({
+            'Mã TBMT':                          item.notifyNo,
+            'Ngày mở thầu':                     item.bidOpenDate || '',
+            'Mã phần lô':                       view.lotNo,
+            'Tên hoạt chất':                    view.lotName,
+            'Mã định danh':                     view.contractorCode,
+            'Tên nhà thầu':                     view.contractorName,
+            'Giá dự thầu':                      view.lotPrice,
+            'Giá sau giảm':                     view.lotFinalPrice,
+          });
+        });
+
+        done++;
+        knghi_log(`✅ ${item.notifyNo}: ${(item.pvcc||[]).length} PVCC, ${(item.open||[]).length} mở thầu`, 'ok');
+        knghi_setProgress(done / total);
+        knghi_setStatus2(`${done}/${total}`);
+      });
+
+    } catch(e) {
+      knghi_log(`❌ Batch lỗi: ${e.message}`, 'err');
+      batch.forEach(n => failed.push(n));
+      done += batch.length;
+      knghi_setProgress(done / total);
+    }
+  }
+
+  knghi_setProgress(1);
+
+  if (failed.length) {
+    knghi_log('─'.repeat(30), 'warn');
+    knghi_log(`❌ ${failed.length} mã lỗi: ${failed.join(', ')}`, 'err');
+  } else {
+    knghi_log('✅ Tất cả thành công!', 'ok');
+  }
+
+  if (allGeneral.length > 0) {
+    knghi_saveExcel(allGeneral, allPvcc, allOpen);
+  } else {
+    knghi_log('⚠️ Không có dữ liệu để xuất.', 'warn');
+  }
+
+  knghi_isCrawling = false;
+  document.getElementById('knghi_btn_start').disabled = false;
+  document.getElementById('knghi_btn_start').textContent = '▶️ Bắt đầu lấy dữ liệu';
+  document.getElementById('knghi_btn_stop').disabled = true;
+  document.getElementById('knghi_btn_stop').textContent = '⛔ Dừng lại';
+  knghi_setStatus2('');
+}
+
+// ── SAVE EXCEL ────────────────────────────────────────────────
+function knghi_saveExcel(general, pvcc, open) {
+  try {
+    knghi_log('💾 Đang tạo Excel…', 'info');
+
+    // Merge open + pvcc theo Mã TBMT + Mã phần lô
+    let merged = open;
+    if (pvcc.length && open.length) {
+      const pvccMap = {};
+      pvcc.forEach(r => {
+        const k = `${r['Mã TBMT']}__${r['Mã phần lô']}`;
+        pvccMap[k] = r;
+      });
+      merged = open.map(row => {
+        const k = `${row['Mã TBMT']}__${row['Mã phần lô']}`;
+        const p = pvccMap[k] || {};
+        const giaSauGiam = parseFloat(row['Giá sau giảm']) || 0;
+        const soLuong    = parseFloat(p['Số lượng']) || 0;
+        const donGia     = soLuong > 0 ? giaSauGiam / soLuong : '';
+        return {
+          'Mã TBMT':              row['Mã TBMT'],
+          'Tên gói thầu':         p['Tên gói thầu'] || '',
+          'Bên mời thầu':         p['Bên mời thầu'] || '',
+          'Địa điểm':             p['Địa điểm'] || '',
+          'Ngày mở thầu':         row['Ngày mở thầu'],
+          'Mã phần lô':           row['Mã phần lô'],
+          'Tên hoạt chất':        row['Tên hoạt chất'],
+          'Nồng độ/hàm lượng':   p['Nồng độ/hàm lượng'] || '',
+          'Đường dùng':           p['Đường dùng'] || '',
+          'Dạng bào chế':         p['Dạng bào chế'] || '',
+          'Đơn vị tính':          p['Đơn vị tính'] || '',
+          'Số lượng':             p['Số lượng'] || '',
+          'Giá kế hoạch':         p['Giá kế hoạch'] || '',
+          'Nhóm thuốc':           p['Nhóm thuốc'] || '',
+          'Mã định danh':         row['Mã định danh'],
+          'Tên nhà thầu':         row['Tên nhà thầu'],
+          'Giá dự thầu':          row['Giá dự thầu'],
+          'Giá sau giảm':         row['Giá sau giảm'],
+          'Đơn giá':              donGia,
+        };
+      });
+    }
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(general), 'Thông tin chung');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(pvcc),    'PVCC');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(merged),  'Mở thầu');
+
+    const fname = `Data_Thau_Final_${knghi_ts()}.xlsx`;
+    XLSX.writeFile(wb, fname);
+    knghi_log(`✅ Đã tải xuống: ${fname}`, 'ok');
+    knghi_setFooter(`Excel: ${fname}`);
+
+  } catch(e) {
+    knghi_log(`❌ Lỗi Excel: ${e.message}`, 'err');
+  }
+}
+
+function knghi_ts() {
+  const d = new Date();
+  return [d.getFullYear(),
+    String(d.getMonth()+1).padStart(2,'0'),
+    String(d.getDate()).padStart(2,'0'),
+    '_',
+    String(d.getHours()).padStart(2,'0'),
+    String(d.getMinutes()).padStart(2,'0'),
+    String(d.getSeconds()).padStart(2,'0')
+  ].join('');
+}
+</script>
+</body>
+</html>
