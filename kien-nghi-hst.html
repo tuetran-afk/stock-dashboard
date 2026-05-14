@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>KN HST</title>
+<style>
+:root {
+  --bg: #0f1117; --surface: #181b25; --surface2: #1e2130; --border: #272b3f;
+  --accent: #4f6ef7; --accent2: #38bdf8; --red: #ef4444; --green: #22c55e;
+  --purple: #a78bfa; --text: #e2e8f0; --muted: #64748b;
+  --kn: #ef4444; --tl: #4f6ef7; --bs: #a78bfa;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; padding-bottom: 70px; }
+
+/* SEARCH */
+.searchbar {
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: 10px 12px; display: flex; gap: 8px; align-items: center;
+  position: sticky; top: 0; z-index: 100;
+}
+.searchbar input {
+  flex: 1; background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text); padding: 9px 12px; border-radius: 8px; font-size: 14px; outline: none; min-width: 0;
+}
+.searchbar input:focus { border-color: var(--accent); }
+.searchbar input::placeholder { color: var(--muted); font-size: 13px; }
+.btn { padding: 9px 14px; border-radius: 8px; border: none; cursor: pointer; font-size: 13px; font-weight: 700; white-space: nowrap; }
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+.btn-blue { background: var(--accent); color: #fff; }
+.btn-green2 { background: #15803d; color: #fff; }
+
+/* STATUSBAR */
+.statusbar {
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: 7px 12px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.status-txt { font-size: 12px; color: var(--accent2); flex: 1; }
+.agent-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.dot-ok { background: #4ade80; animation: pulse 2s infinite; }
+.dot-err { background: #f87171; }
+@keyframes pulse { 0%,100%{opacity:1}50%{opacity:.3} }
+.chips { display: flex; gap: 5px; }
+.chip { padding: 3px 10px; border-radius: 20px; border: 1.5px solid; font-size: 11px; font-weight: 700; cursor: pointer; user-select: none; }
+.chip-all { border-color: var(--muted); color: var(--muted); }
+.chip-all.on { background: var(--muted); color: #fff; }
+.chip-kn { border-color: var(--kn); color: var(--kn); }
+.chip-kn.on { background: var(--kn); color: #fff; }
+.chip-tl { border-color: var(--tl); color: var(--tl); }
+.chip-tl.on { background: var(--tl); color: #fff; }
+.chip-bs { border-color: var(--bs); color: var(--bs); }
+.chip-bs.on { background: var(--bs); color: #fff; }
+.sort-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--muted); padding: 3px 9px; border-radius: 6px; font-size: 11px; cursor: pointer; }
+.sort-btn.on { border-color: var(--accent); color: var(--accent); }
+.count-txt { font-size: 11px; color: var(--muted); }
+
+/* RESULTS */
+.results { padding: 10px 10px 0; }
+
+/* CONTRACTOR GROUP */
+.cgroup { margin-bottom: 16px; }
+.cgroup-hdr {
+  display: flex; align-items: center; gap: 8px; padding: 4px 0 8px;
+}
+.cg-num { font-size: 10px; font-weight: 800; color: #fff; background: var(--accent); padding: 2px 7px; border-radius: 4px; flex-shrink: 0; }
+.cg-name { font-size: 13px; font-weight: 700; color: var(--accent2); line-height: 1.3; }
+
+/* PETITION THREAD */
+.petition { margin-bottom: 10px; }
+
+/* KN CARD - main */
+.kn-card {
+  background: var(--surface); border: 1px solid #3a1f1f;
+  border-left: 3px solid var(--kn);
+  border-radius: 10px; padding: 10px 12px;
+  display: flex; gap: 8px; align-items: flex-start;
+}
+.kn-card.sel { border-color: var(--kn); background: #1f1515; }
+
+/* REPLIES - thụt vào, có đường kẻ */
+.replies { margin-left: 14px; margin-top: 4px; position: relative; }
+.replies::before {
+  content: ''; position: absolute; left: -10px; top: 0; bottom: 8px;
+  width: 2px; background: var(--border); border-radius: 2px;
+}
+
+/* TL CARD */
+.tl-card {
+  background: var(--surface2); border: 1px solid #1a2040;
+  border-left: 3px solid var(--tl);
+  border-radius: 8px; padding: 9px 11px;
+  display: flex; gap: 8px; align-items: flex-start;
+  margin-bottom: 4px; position: relative;
+}
+.tl-card::before {
+  content: ''; position: absolute; left: -12px; top: 50%;
+  width: 10px; height: 2px; background: var(--border);
+}
+.tl-card.sel { border-color: var(--tl); }
+
+/* BS CARD */
+.bs-card {
+  background: var(--surface2); border: 1px solid #1e1830;
+  border-left: 3px solid var(--bs);
+  border-radius: 8px; padding: 9px 11px;
+  display: flex; gap: 8px; align-items: flex-start;
+  margin-bottom: 4px; position: relative;
+}
+.bs-card::before {
+  content: ''; position: absolute; left: -12px; top: 50%;
+  width: 10px; height: 2px; background: var(--border);
+}
+.bs-card.sel { border-color: var(--bs); }
+
+/* CARD INTERNALS */
+.card-left { display: flex; flex-direction: column; align-items: center; gap: 5px; flex-shrink: 0; padding-top: 1px; }
+input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
+.badge { width: 28px; height: 18px; border-radius: 4px; font-size: 10px; font-weight: 800; color: #fff; display: flex; align-items: center; justify-content: center; }
+.b-KN { background: var(--kn); }
+.b-TL { background: var(--tl); }
+.b-BS { background: var(--bs); }
+
+.card-body { flex: 1; min-width: 0; }
+.c-date { font-size: 10px; color: var(--muted); margin-bottom: 2px; }
+.c-name { font-size: 12px; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.c-req { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.c-content { font-size: 11px; color: #4b5563; margin-top: 3px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4; }
+
+.card-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; min-width: 64px; }
+.btn-dl { padding: 5px 9px; border-radius: 6px; border: none; cursor: pointer; font-size: 11px; font-weight: 700; background: var(--accent); color: #fff; width: 100%; text-align: center; }
+.btn-dl:disabled { opacity: .4; cursor: not-allowed; }
+.btn-open { padding: 5px 9px; border-radius: 6px; border: none; cursor: pointer; font-size: 11px; font-weight: 700; background: #15803d; color: #fff; width: 100%; text-align: center; }
+.pbar-bg { background: #0f1117; border-radius: 3px; height: 4px; overflow: hidden; width: 100%; }
+.pbar-fill { height: 100%; border-radius: 3px; transition: width .3s; }
+.plabel { font-size: 10px; color: var(--muted); text-align: right; margin-top: 1px; }
+.plabel.done { color: var(--green); } .plabel.err { color: var(--red); }
+
+/* NO REPLY PLACEHOLDER */
+.no-reply {
+  margin-left: 14px; margin-top: 4px;
+  font-size: 11px; color: #374151; font-style: italic;
+  padding: 4px 8px;
+}
+
+.empty { text-align: center; color: var(--muted); padding: 50px 20px; font-size: 13px; }
+.spinner { width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .6s linear infinite; display: inline-block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* BOTTOM BAR */
+.bottombar {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--surface); border-top: 1px solid var(--border);
+  padding: 10px 12px; display: flex; align-items: center; gap: 10px;
+}
+.bcount { font-size: 12px; color: var(--muted); flex: 1; }
+</style>
+</head>
+<body>
+
+<div class="searchbar">
+  <input id="notifyInput" type="text" placeholder="Notify No. (IB...)" autocomplete="off" />
+  <button class="btn btn-blue" id="btnSearch" onclick="doSearch()">Tìm</button>
+</div>
+
+<div class="statusbar">
+  <span class="status-txt" id="statusTxt">Sẵn sàng.</span>
+  <span class="agent-dot dot-err" id="agentDot"></span>
+  <div class="chips">
+    <span class="chip chip-all" id="chipAll" onclick="toggleAll()">All</span>
+    <span class="chip chip-kn"  id="chipKN"  onclick="toggleType('KN')">KN</span>
+    <span class="chip chip-tl"  id="chipTL"  onclick="toggleType('TL')">TL</span>
+    <span class="chip chip-bs"  id="chipBS"  onclick="toggleType('BS')">BS</span>
+  </div>
+  <button class="sort-btn" id="btnSort" onclick="toggleSort()">↕ Ngày</button>
+  <span class="count-txt" id="countTxt">0 chọn</span>
+</div>
+
+<div class="results" id="results">
+  <div class="empty">Nhập Notify No. và bấm Tìm.</div>
+</div>
+
+<div class="bottombar">
+  <span class="bcount" id="bottomCount">0 tệp được chọn</span>
+  <button class="btn btn-green2" id="btnDlAll" onclick="downloadSelected()" disabled>⬇ Tải đã chọn</button>
+</div>
+
+<script>
+const API_URL = 'https://knghi.duoctrexanh.workers.dev/kn'
+const DL_URL  = 'http://localhost:1234/api/download/file/browser/public'
+
+// allGroups: [{pnum, contractor, kn:[], tl:[], bs:[]}]
+let allGroups = [], sortByDate = false, selKN = true, selTL = true, selBS = true
+const fileBlobs = {}, allFiles = () => allGroups.flatMap(g => [...g.kn, ...g.tl, ...g.bs])
+
+async function checkAgent() {
+  try { await fetch('http://localhost:1234/', { mode: 'no-cors' }); setDot(true); return true }
+  catch { setDot(false); return false }
+}
+function setDot(ok) {
+  document.getElementById('agentDot').className = 'agent-dot ' + (ok ? 'dot-ok' : 'dot-err')
+  const st = document.getElementById('statusTxt')
+  if (!ok) { st.textContent = 'Agent chưa chạy — vui lòng bật Agent MSC!'; st.style.color = 'var(--red)' }
+  else if (st.textContent.startsWith('Agent')) { st.textContent = 'Sẵn sàng.'; st.style.color = 'var(--accent2)' }
+}
+checkAgent(); setInterval(checkAgent, 5000)
+
+async function doSearch() {
+  const notifyNo = document.getElementById('notifyInput').value.trim()
+  if (!notifyNo) { alert('Nhập Notify No.'); return }
+  setStatus('Đang tìm...')
+  document.getElementById('btnSearch').disabled = true
+  document.getElementById('results').innerHTML = '<div class="empty"><span class="spinner"></span></div>'
+  allGroups = []
+  try {
+    const r = await fetch(API_URL, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ notifyNo }) })
+    if (!r.ok) throw new Error('HTTP ' + r.status)
+    parseResults(await r.json())
+  } catch(e) {
+    setStatus('Lỗi: ' + e.message, 'err')
+    document.getElementById('results').innerHTML = '<div class="empty">Lỗi kết nối.</div>'
+  }
+  document.getElementById('btnSearch').disabled = false
+}
+
+function parseResults(data) {
+  const pets = []
+  if (data.biduPetitionContractorVersionDTOList)
+    for (const v of data.biduPetitionContractorVersionDTOList)
+      pets.push(...(v.biduPetitionContractorDTOList || []))
+  if (!pets.length) {
+    setStatus('Không tìm thấy.', 'muted')
+    document.getElementById('results').innerHTML = '<div class="empty">Không có dữ liệu.</div>'
+    return
+  }
+
+  for (const [pi, p] of pets.entries()) {
+    const pnum = pi + 1
+    const contractor = p.contractorName || 'N/A'
+    const reqName = p.reqName || ''
+    let content = []; try { content = JSON.parse(p.content||'[]'); if (!Array.isArray(content)) content=[] } catch {}
+
+    const group = { pnum, contractor, kn: [], tl: [], bs: [] }
+
+    for (const v of content) {
+      if (v.reqFileId) group.kn.push(mkFile(pnum, 'KN', v.reqDate, v.reqFileId, v.reqFileName, reqName, v.reqContent||''))
+      if (v.resFileId) group.tl.push(mkFile(pnum, 'TL', v.resDate, v.resFileId, v.resFileName, 'Trả lời kiến nghị', v.resContent||''))
+    }
+    try {
+      const cr = JSON.parse(p.continueReply||'[]')
+      if (Array.isArray(cr) && cr.length && cr[0].fileId)
+        group.bs.push(mkFile(pnum, 'BS', cr[0].resDate, cr[0].fileId, cr[0].fileName, 'Bổ sung tài liệu', ''))
+    } catch {}
+
+    allGroups.push(group)
+  }
+
+  const total = allFiles().length
+  setStatus(`Tìm thấy ${total} tệp / ${allGroups.length} nhà thầu.`)
+  document.getElementById('btnDlAll').disabled = false
+  render()
+}
+
+function mkFile(pnum, type, date, fileId, fileName, reqName, content) {
+  const base = (fileName||'').replace(/\.[^.]+$/,'') || fileId
+  return { pnum, type, date: fmtDate(date), sortDate: new Date(date||0),
+    fileId, fileName: fileName||fileId,
+    name: base, reqName, content: content.trim(),
+    selected: false, progress: 0, status: '', done: false, error: false }
+}
+function fmtDate(d) { if (!d) return ''; try { return new Date(d).toLocaleDateString('vi-VN') } catch { return '' } }
+
+function render() {
+  let groups = [...allGroups]
+  if (sortByDate) {
+    groups = groups.map(g => ({
+      ...g,
+      kn: [...g.kn].sort((a,b)=>b.sortDate-a.sortDate),
+      tl: [...g.tl].sort((a,b)=>b.sortDate-a.sortDate),
+      bs: [...g.bs].sort((a,b)=>b.sortDate-a.sortDate),
+    }))
+  }
+
+  let html = ''
+  for (const g of groups) {
+    const hasAny = (selKN&&g.kn.length)||(selTL&&g.tl.length)||(selBS&&g.bs.length)
+    if (!hasAny) continue
+
+    html += `<div class="cgroup">
+      <div class="cgroup-hdr">
+        <span class="cg-num">#${String(g.pnum).padStart(2,'0')}</span>
+        <span class="cg-name">${esc(g.contractor)}</span>
+      </div>`
+
+    // Pair KN với TL/BS tương ứng theo index
+    const maxKN = Math.max(g.kn.length, 1)
+    for (let i = 0; i < maxKN; i++) {
+      const kn = g.kn[i]
+      const tl = g.tl[i]
+      const bs = i === 0 ? g.bs[0] : null  // BS chỉ có 1
+
+      html += `<div class="petition">`
+
+      if (kn && selKN) {
+        html += fileCard(kn, 'kn-card')
+      }
+
+      // Replies block
+      const hasReplies = (tl && selTL) || (bs && selBS)
+      if (hasReplies) {
+        html += `<div class="replies">`
+        if (tl && selTL) html += fileCard(tl, 'tl-card')
+        if (bs && selBS) html += fileCard(bs, 'bs-card')
+        html += `</div>`
+      } else if (kn && selKN) {
+        html += `<div class="no-reply">Chưa có trả lời</div>`
+      }
+
+      html += `</div>`
+    }
+
+    html += `</div>`
+  }
+
+  document.getElementById('results').innerHTML = html || '<div class="empty">Không có tệp.</div>'
+  updateCount()
+}
+
+function fileCard(f, cls) {
+  const pct = Math.round(f.progress * 100)
+  const bc = f.done ? '#22c55e' : f.error ? '#ef4444' : '#4f6ef7'
+  const lbl = f.done ? '✓ Xong' : f.error ? '✗ Lỗi' : f.status
+  const lc = f.done ? 'done' : f.error ? 'err' : ''
+  const actionBtn = f.done
+    ? `<button class="btn-open" onclick="openFile('${f.fileId}')">📂 Mở</button>`
+    : `<button class="btn-dl" id="dl-${f.fileId}" onclick="dlOne('${f.fileId}')">⬇ Tải</button>`
+  return `<div class="${cls}${f.selected?' sel':''}" id="row-${f.fileId}">
+    <div class="card-left">
+      <input type="checkbox" ${f.selected?'checked':''} onchange="toggleSel('${f.fileId}',this.checked)">
+    </div>
+    <div class="card-body">
+      ${f.date?`<div class="c-date">${f.date}</div>`:''}
+      <div class="c-name" title="${esc(f.name)}">${esc(f.name)}</div>
+      <div class="c-req">${esc(f.reqName)}</div>
+      ${f.content?`<div class="c-content">${esc(f.content)}</div>`:''}
+    </div>
+    <div class="card-right">
+      ${actionBtn}
+      <div class="pbar-bg"><div class="pbar-fill" id="pb-${f.fileId}" style="width:${pct}%;background:${bc}"></div></div>
+      <div class="plabel ${lc}" id="pl-${f.fileId}">${lbl}</div>
+    </div>
+  </div>`
+}
+
+function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') }
+
+function updateRowUI(f) {
+  const pct = Math.round(f.progress*100)
+  const bc = f.done?'#22c55e':f.error?'#ef4444':'#4f6ef7'
+  const pb = document.getElementById('pb-'+f.fileId), pl = document.getElementById('pl-'+f.fileId)
+  if (pb) { pb.style.width=pct+'%'; pb.style.background=bc }
+  if (pl) { pl.className='plabel'+(f.done?' done':f.error?' err':''); pl.textContent=f.done?'✓ Xong':f.error?'✗ Lỗi':f.status }
+  const dlBtn = document.getElementById('dl-'+f.fileId)
+  if (f.done && dlBtn) dlBtn.outerHTML=`<button class="btn-open" onclick="openFile('${f.fileId}')">📂 Mở</button>`
+}
+
+function toggleSel(fileId, checked) {
+  const f = allFiles().find(x=>x.fileId===fileId); if (f) f.selected=checked
+  const row = document.getElementById('row-'+fileId)
+  if (row) {
+    const base = row.className.replace(' sel','')
+    row.className = checked ? base+' sel' : base
+  }
+  updateCount()
+}
+
+function toggleType(t) {
+  // Chỉ select thêm, không bỏ chọn
+  allFiles().forEach(f=>{ if (f.type===t) f.selected=true })
+  document.getElementById('chip'+t).classList.add('on')
+  render()
+}
+function toggleAll() {
+  const any = allFiles().some(f=>f.selected), nv=!any
+  allFiles().forEach(f=>f.selected=nv)
+  ;['KN','TL','BS'].forEach(t=>document.getElementById('chip'+t).classList.toggle('on',nv))
+  document.getElementById('chipAll').classList.toggle('on',nv)
+  render()
+}
+function toggleSort() { sortByDate=!sortByDate; document.getElementById('btnSort').classList.toggle('on',sortByDate); render() }
+function updateCount() {
+  const n = allFiles().filter(f=>f.selected).length
+  document.getElementById('countTxt').textContent = n+' chọn'
+  document.getElementById('bottomCount').textContent = n+' tệp được chọn'
+}
+
+async function dlOne(fileId) {
+  if (!await checkAgent()) { alert('Agent chưa chạy!'); return }
+  const f = allFiles().find(x=>x.fileId===fileId); if (!f) return
+  const btn = document.getElementById('dl-'+fileId); if (btn) btn.disabled=true
+  f.status='...'; f.progress=0.1; updateRowUI(f)
+  try {
+    const r = await fetch(DL_URL+'?fileId='+fileId)
+    if (!r.ok) throw new Error('HTTP '+r.status)
+    const blob = await r.blob()
+    const cd = r.headers.get('content-disposition')||''
+    const m = cd.match(/filename[^;=\n]*=(['"]?)([^'"\n]+)\1/)
+    fileBlobs[fileId] = { blob, name: m?decodeURIComponent(m[2].trim()):f.fileName }
+    f.done=true; f.progress=1; f.status='Xong'; updateRowUI(f); updateCount()
+  } catch(e) { f.error=true; f.progress=0; f.status='Lỗi'; updateRowUI(f); if (btn) btn.disabled=false }
+}
+async function downloadSelected() {
+  if (!await checkAgent()) { alert('Agent chưa chạy!'); return }
+  const sel = allFiles().filter(f=>f.selected&&!f.done)
+  if (!sel.length) { alert('Không có tệp chưa tải.'); return }
+  document.getElementById('btnDlAll').disabled=true
+  for (const f of sel) await dlOne(f.fileId)
+  document.getElementById('btnDlAll').disabled=false
+}
+function openFile(fileId) {
+  const d=fileBlobs[fileId]; if (!d) return
+  const url=URL.createObjectURL(d.blob)
+  const a=document.createElement('a'); a.href=url; a.download=d.name; a.click()
+  setTimeout(()=>URL.revokeObjectURL(url),5000)
+}
+function setStatus(msg, type) {
+  const el=document.getElementById('statusTxt'); el.textContent=msg
+  el.style.color=type==='err'?'var(--red)':type==='muted'?'var(--muted)':'var(--accent2)'
+}
+document.getElementById('notifyInput').addEventListener('keydown', e=>{ if (e.key==='Enter') doSearch() })
+</script>
+</body>
+</html>
