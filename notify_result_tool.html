@@ -1,5 +1,5 @@
 
-<h2 class="sr-only">Tool tự động refresh notifyNo theo batch 500 dòng/ngày</h2>
+<h2 class="sr-only">Tool tự động fetch pvcc, open và refresh result notifyNo theo batch 500 dòng/ngày</h2>
 <style>
 .wrap{padding:1rem 0;font-size:13px}
 .section-header{font-size:11px;font-weight:500;color:#534AB7;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.8px;margin:0 0 8px;display:flex;align-items:center;gap:6px}
@@ -51,11 +51,19 @@
 .btn-ghost.amber:hover{background:#FAEEDA}
 .btn-ghost.red{border-color:#F09595;color:#A32D2D}
 .btn-ghost.red:hover{background:#FCEBEB}
-textarea{width:100%;min-height:80px;resize:vertical;font-family:var(--font-mono);font-size:11px;border:0.5px solid #AFA9EC;border-radius:var(--border-radius-md);padding:6px 8px;background:#fff;color:var(--color-text-primary)}
+textarea{width:100%;min-height:80px;resize:vertical;font-family:var(--font-mono);font-size:11px;border:0.5px solid #AFA9EC;border-radius:var(--border-radius-md);padding:6px 8px;background:#fff;color:var(--color-text-primary);box-sizing:border-box}
 input[type=text],input[type=number]{background:#fff;border:0.5px solid #AFA9EC;border-radius:var(--border-radius-md);padding:6px 8px;font-size:12px;color:var(--color-text-primary)}
 input[type=text]:focus,input[type=number]:focus,textarea:focus{outline:none;border-color:#534AB7}
 .run-status{font-size:12px;color:#534AB7;flex:1;font-weight:500}
 .eta{font-size:11px;color:#854F0B;font-family:var(--font-mono)}
+.mode-group{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.mode-btn{background:#fff;border:0.5px solid #AFA9EC;color:#534AB7;font-size:11px;padding:5px 10px;border-radius:var(--border-radius-md);cursor:pointer;display:inline-flex;align-items:center;gap:5px;font-family:var(--font-mono);transition:background 0.1s,border-color 0.1s}
+.mode-btn:hover{background:#EEEDFE}
+.mode-btn.active{background:#534AB7;color:#fff;border-color:#3C3489}
+.mode-badge{font-size:9px;padding:1px 5px;border-radius:3px;font-weight:500;letter-spacing:0.4px}
+.mode-btn .mode-badge{background:rgba(255,255,255,0.2);color:inherit}
+.mode-btn:not(.active) .mode-badge{background:#EEEDFE;color:#534AB7}
+.mode-btn.active .mode-badge{background:rgba(255,255,255,0.25);color:#fff}
 </style>
 
 <div class="wrap">
@@ -74,6 +82,19 @@ input[type=text]:focus,input[type=number]:focus,textarea:focus{outline:none;bord
     <div class="fg">
       <label>Giới hạn/ngày</label>
       <input type="number" id="dailyLimit" value="500" min="1" max="2000" style="width:80px">
+    </div>
+  </div>
+  <div class="fg" style="margin-top:8px;">
+    <label>Endpoint mode</label>
+    <div class="mode-group" id="modeGroup">
+      <button class="mode-btn active" data-mode="result" onclick="setMode('result',this)">
+        <i class="ti ti-refresh" aria-hidden="true"></i> Result refresh
+        <span class="mode-badge">result?notifyNo=…&amp;refresh=1</span>
+      </button>
+      <button class="mode-btn" data-mode="tbmt" onclick="setMode('tbmt',this)">
+        <i class="ti ti-cloud-download" aria-hidden="true"></i> TBMT refetch
+        <span class="mode-badge">tbmt/refetch?notifyNo=…</span>
+      </button>
     </div>
   </div>
   <div class="url-preview" id="urlPreview"></div>
@@ -138,12 +159,24 @@ input[type=text]:focus,input[type=number]:focus,textarea:focus{outline:none;bord
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
-const KEY_LIST='nfr2_list',KEY_CURSOR='nfr2_cursor',KEY_DATE='nfr2_date',KEY_TCOUNT='nfr2_tcount',KEY_OK='nfr2_ok',KEY_ERR='nfr2_err';
-let allList=[],running=false,paused=false,abortFlag=false;
+const KEY_LIST='nfr2_list',KEY_CURSOR='nfr2_cursor',KEY_DATE='nfr2_date',KEY_TCOUNT='nfr2_tcount',KEY_OK='nfr2_ok',KEY_ERR='nfr2_err',KEY_MODE='nfr2_mode';
+let allList=[],running=false,paused=false,abortFlag=false,currentMode='result';
 function todayStr(){return new Date().toISOString().slice(0,10)}
 function save(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
 function load(k,d){try{const v=localStorage.getItem(k);return v!==null?JSON.parse(v):d}catch(e){return d}}
-function buildUrl(n){const b=document.getElementById('workerUrl').value.trim().replace(/\/$/,'');return`${b}/result?notifyNo=${encodeURIComponent(n)}&refresh=1`}
+function setMode(mode,btn){
+  currentMode=mode;
+  save(KEY_MODE,mode);
+  document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  updatePreview();
+  addLog(`Chuyển mode: ${mode==='result'?'Result refresh (/result?notifyNo=…&refresh=1)':'TBMT refetch (/tbmt/refetch?notifyNo=…)'}`, '');
+}
+function buildUrl(n){
+  const b=document.getElementById('workerUrl').value.trim().replace(/\/$/,'');
+  if(currentMode==='tbmt') return`${b}/tbmt/refetch?notifyNo=${encodeURIComponent(n)}`;
+  return`${b}/result?notifyNo=${encodeURIComponent(n)}&refresh=1`;
+}
 function updatePreview(){document.getElementById('urlPreview').textContent=buildUrl('IB2400138756')}
 function addLog(msg,cls=''){const box=document.getElementById('logBox');const d=document.createElement('div');d.className='log-line'+(cls?' '+cls:'');const t=new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit',second:'2-digit'});d.textContent=`[${t}] ${msg}`;box.appendChild(d);box.scrollTop=box.scrollHeight}
 function updateStats(){
@@ -212,7 +245,7 @@ async function startRun(){
   document.getElementById('btnRun').disabled=true;
   document.getElementById('btnPause').disabled=false;
   const canRun=Math.min(limit-tcount,allList.length-cursor);
-  addLog(`Bắt đầu: ${canRun} request (quota còn ${limit-tcount}, cursor=${cursor})`,'');
+  addLog(`Bắt đầu mode [${currentMode}]: ${canRun} request (quota còn ${limit-tcount}, cursor=${cursor})`,'');
   let ok=load(KEY_OK,0),err=load(KEY_ERR,0);
   for(let i=0;i<canRun&&!abortFlag;i++){
     while(paused&&!abortFlag)await new Promise(r=>setTimeout(r,200));
@@ -237,6 +270,13 @@ window.addEventListener('beforeunload',()=>{if(running)abortFlag=true});
   const stored=load(KEY_LIST,[]);
   if(stored.length){allList=stored;document.getElementById('pasteArea').value=stored.join('\n')}
   if(load(KEY_DATE,'')!==todayStr()){save(KEY_TCOUNT,0);save(KEY_DATE,todayStr())}
+  const savedMode=load(KEY_MODE,'result');
+  if(savedMode!=='result'){
+    currentMode=savedMode;
+    document.querySelectorAll('.mode-btn').forEach(b=>{
+      if(b.dataset.mode===savedMode){b.classList.add('active')}else{b.classList.remove('active')}
+    });
+  }
   updateStats();
   if(stored.length)addLog(`Khôi phục ${stored.length} mã, cursor tại ${load(KEY_CURSOR,0)}`,'ok');
   updatePreview();
