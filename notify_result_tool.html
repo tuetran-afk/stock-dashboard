@@ -83,6 +83,12 @@ input[type=text]:focus,input[type=number]:focus,textarea:focus{outline:none;bord
       <label>Giới hạn/ngày</label>
       <input type="number" id="dailyLimit" value="500" min="1" max="2000" style="width:80px">
     </div>
+    <div class="row" style="margin-top:10px;">
+    <div class="fg" style="flex:1;">
+      <label>JWT Token (Lấy từ web chính sau khi đăng nhập)</label>
+      <input type="text" id="apiToken" placeholder="Paste chuỗi eyJhbGciOiJIUz... vào đây" style="width:100%">
+    </div>
+  </div>
   </div>
   <div class="fg" style="margin-top:8px;">
     <label>Endpoint mode</label>
@@ -252,7 +258,14 @@ async function startRun(){
     if(abortFlag)break;
     const notifyNo=allList[cursor];
     document.getElementById('runStatus').textContent=`[${cursor+1}/${allList.length}] ${notifyNo}`;
-    try{const res=await fetch(buildUrl(notifyNo));if(!res.ok)throw new Error('HTTP '+res.status);ok++;save(KEY_OK,ok);addLog(`OK  ${notifyNo}`,'ok')}
+    try {
+      const token = document.getElementById('apiToken').value.trim();
+      const res = await fetch(buildUrl(notifyNo), {
+        headers: { 'Authorization': token ? 'Bearer ' + token : '' }
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      ok++; save(KEY_OK,ok); addLog(`OK  ${notifyNo}`,'ok');
+    }
     catch(e){err++;save(KEY_ERR,err);addLog(`ERR ${notifyNo} — ${e.message}`,'err')}
     cursor++;tcount++;save(KEY_CURSOR,cursor);save(KEY_TCOUNT,tcount);updateStats();
     if(i<canRun-1&&!abortFlag)await new Promise(r=>setTimeout(r,delay));
